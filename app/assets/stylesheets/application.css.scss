@@ -1,0 +1,39 @@
+section {
+  box-sizing: border-box;
+  padding: 10px;
+  overflow-y: auto;
+
+  &.tags {
+    background-color: #3b4446;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 200px;
+  }
+
+  &.posts {
+    background-color: #eee;
+    position: absolute;
+    top: 0;
+    left: 200px;
+    bottom: 0;
+    width: 350px;
+  }
+
+  &.post {
+    position: absolute;
+    top: 0;
+    left: 200px + 350px;
+    right: 0;
+    bottom: 0;
+
+    img.content {
+      max-width: 100%;
+    }
+
+    .comment.by_post_author > .author {
+      color: #0000FF;
+    }
+  }
+}

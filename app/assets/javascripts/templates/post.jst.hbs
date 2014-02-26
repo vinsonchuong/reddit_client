@@ -1,0 +1,13 @@
+{{#post}}
+  <h1 class="title">{{title}}</h1>
+
+  {{#image}}<img src="{{.}}" class="content"/>{{/image}}
+  {{#selftext}}<p class="content">{{.}}</p>{{/selftext}}
+{{/post}}
+
+<h2>Comments</h2>
+<ul class="comments">
+  {{#comments}}
+    {{> _comment}}
+  {{/comments}}
+</ul>

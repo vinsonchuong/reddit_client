@@ -7,6 +7,7 @@ gem 'puma'
 
 gem 'sass-rails'
 gem 'underscore-rails'
+gem 'handlebars_assets'
 gem 'jquery-rails'
 gem 'lodash-rails'
 
@@ -14,6 +15,7 @@ group :development, :test do
   gem 'rspec-rails'
   gem 'jasmine-rails'
   gem 'jasmine-jquery-rails'
+  gem 'sinon-rails'
 end
 
 group :test do

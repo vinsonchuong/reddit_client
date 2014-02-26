@@ -38,6 +38,12 @@ GEM
     database_cleaner (1.2.0)
     diff-lcs (1.2.5)
     erubis (2.7.0)
+    execjs (2.0.2)
+    handlebars_assets (0.15)
+      execjs (>= 1.2.9)
+      multi_json
+      sprockets (>= 2.0.3)
+      tilt
     hike (1.2.3)
     i18n (0.6.9)
     jasmine-core (2.0.0)
@@ -104,6 +110,8 @@ GEM
       railties (>= 4.0.0, < 5.0)
       sass (>= 3.1.10)
       sprockets-rails (~> 2.0.0)
+    sinon-rails (1.7.3)
+      railties (>= 3.1)
     sprockets (2.11.0)
       hike (~> 1.2)
       multi_json (~> 1.0)
@@ -133,6 +141,7 @@ PLATFORMS
 DEPENDENCIES
   capybara
   database_cleaner
+  handlebars_assets
   jasmine-jquery-rails
   jasmine-rails
   jquery-rails
@@ -142,5 +151,6 @@ DEPENDENCIES
   rails (= 4.0.3)
   rspec-rails
   sass-rails
+  sinon-rails
   sqlite3
   underscore-rails

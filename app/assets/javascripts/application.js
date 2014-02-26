@@ -1,6 +1,5 @@
-//= require lodash
 //= require handlebars.runtime
-//= require templates/layout
+//= require templates/application
 //= require templates/subreddits
 //= require templates/posts
 //= require templates/_comment
@@ -30,7 +29,8 @@
   }
 
   function renderResource(type, data) {
-    document.querySelector('section.' + type).innerHTML = JST['templates/' + type](data);
+    var selector = ['section', 'body', 'div'].map(function(tag) { return tag + '.' + type; }).join();
+    document.querySelector(selector).innerHTML = JST['templates/' + type](data);
   }
 
   function whenReady(callback) {
@@ -105,6 +105,6 @@
   });
 
   whenReady(function() {
-    document.querySelector('.app').innerHTML = JST['templates/layout']();
+    renderResource('application');
   });
 }).call(this);

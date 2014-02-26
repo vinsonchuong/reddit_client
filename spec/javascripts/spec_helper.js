@@ -1,4 +1,5 @@
 //= require jquery
+//= require lodash
 //= require jasmine-jquery
 //= require sinon
 (function() {
@@ -7,11 +8,11 @@
       $ = exports.$,
       sinon = exports.sinon;
 
-  $('#jasmine_content').addClass('app');
+  $('#jasmine_content').addClass('application');
 
-  exports.server = sinon.fakeServer.create();
-  exports.server.respondTo = function(url, json) {
+  var server = exports.server = sinon.fakeServer.create();
+  server.respondTo = function(url, json) {
     _.last(_.where(exports.server.requests, {url: url})).respond(
       200, {'Content-Type': 'application/json'}, JSON.stringify(json));
-  }
+  };
 }).call(this);

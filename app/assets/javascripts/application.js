@@ -29,7 +29,9 @@
   }
 
   function renderResource(type, data) {
-    var selector = ['section', 'body', 'div'].map(function(tag) { return tag + '.' + type; }).join();
+    var selector = ['section', 'body', 'div'].map(function(tag) {
+      return tag + '.' + type;
+    }).join();
     document.querySelector(selector).innerHTML = JST['templates/' + type](data);
   }
 
@@ -37,74 +39,124 @@
     document.addEventListener('DOMContentLoaded', callback);
   }
 
-  whenReady(function() {
-    withResource('http://www.reddit.com/subreddits/popular.json', function(data) {
-      renderResource('subreddits', {
-        subreddits: _.map(data.data.children, function(obj) { return obj.data; })
+  function Model() {
+    var self = this;
+    self.fetch = function(success) {
+      withResource(self.url(), function(data) {
+        success(self.parse(data));
       });
+    };
+    self.parse = function(data) { return data; };
+    self.url = function() { throw new Error("Url Not Implemented"); };
+  }
+
+  function SubReddits(options) {
+    var self = new Model(options);
+    self.url = function() {
+      return 'http://www.reddit.com/subreddits/popular.json';
+    };
+    self.parse = function(data) {
+      return data.data.children.map(function(obj) {
+        return obj.data;
+      });
+    };
+    return self;
+  }
+
+  function SubReddit(options) {
+    var self = new Model(options);
+    self.url = function() {
+      return 'http://www.reddit.com/r/' + options.id + '/hot.json';
+    };
+    self.parse = function(data) {
+      return {
+        posts: data.data.children.map(function(obj) { return obj.data; })
+      };
+    };
+    return self;
+  }
+
+  function Post(options) {
+    var self = new Model(options);
+    self.url = function() {
+      return 'http://www.reddit.com/r/' + options.subreddit_id + '/comments/' + options.id + '.json';
+    };
+
+    self.parse = function(data) {
+      function parsePost(post) {
+        post = post.data;
+
+        if (post.domain === 'imgur.com') {
+          post.image = post.url.replace(/^http:\/\/imgur\.com\/(.+)$/, 'http://i.imgur.com/$1.jpg');
+        } else if (post.domain === 'i.imgur.com') {
+          post.image = post.url;
+        } else if (post.is_self) {
+          if (!post.selftext) {
+            delete post.selftext;
+          }
+        }
+        return post;
+      }
+
+      var post = parsePost(data[0].data.children[0]),
+          comments = new Comments({post: post}).parse(data[1]);
+
+      return {post: post, comments: comments}
+    };
+    return self;
+  }
+
+  function Comments(options) {
+    var self = this;
+
+    function parseComment(comment) {
+      if (comment.kind !== 't1') { return false; }
+      comment = comment.data;
+
+      if (comment.replies) {
+        comment.replies = self.parse(comment.replies);
+      } else {
+        delete comment.replies;
+      }
+
+      if (options.post.author === comment.author) {
+        comment.post_author = true;
+      }
+
+      return comment;
+    }
+
+    self.parse = function parse(listing) {
+      return listing.data.children.map(parseComment).filter(Boolean);
+    };
+
+    return self;
+  }
+
+  whenReady(function() {
+    renderResource('application');
+  });
+
+  whenReady(function() {
+    new SubReddits().fetch(function(subreddits) {
+      renderResource('subreddits', {subreddits: subreddits});
     });
   });
 
   whenReady(function() {
     listen('click', 'subreddit', function(e) {
-      withResource('http://www.reddit.com' + e.target.dataset.url + '/hot.json', function(data) {
-        renderResource('posts', {
-          posts: _.map(data.data.children, function(obj) { return obj.data; })
-        });
+      new SubReddit({id: e.target.dataset.url.split('/')[2]}).fetch(function(subreddit) {
+        renderResource('posts', subreddit);
       });
     });
   });
 
   whenReady(function() {
     listen('click', 'title', function(e) {
-      withResource('http://www.reddit.com' + e.target.dataset.url + '.json', function(data) {
-        function parsePost(post) {
-          post = post.data;
-
-          if (post.domain === 'imgur.com') {
-            post.image = post.url.replace(/^http:\/\/imgur\.com\/(.+)$/, 'http://i.imgur.com/$1.jpg');
-          } else if(post.domain === 'i.imgur.com') {
-            post.image = post.url;
-          } else if (post.is_self) {
-            if (!post.selftext) {
-              delete post.selftext;
-            }
-          }
-          return post;
-        }
-
-        function parseComment(comment) {
-          comment = _.clone(comment.data);
-
-          if (comment.replies) {
-            comment.replies = parseComments(comment.replies);
-          } else {
-            delete comment.replies;
-          }
-          if(post.author === comment.author) {
-            comment.post_author = true;
-          }
-          return comment;
-        }
-
-        function parseComments(listing) {
-          return _.compact(_.map(listing.data.children, function(comment) {
-            if (comment.kind === 't1') {
-              return parseComment(comment);
-            }
-          }));
-        }
-
-        var post;
-        renderResource('post', {
-          post: post = parsePost(data[0].data.children[0]),
-          comments: parseComments(data[1])
-        });
+      var ids = e.target.dataset.url.match(/^\/r\/(.*?)\/comments\/(.*?)(?:\/|$)/);
+      new Post({id: ids[2], subreddit_id: ids[1]}).fetch(function(post) {
+        renderResource('post', post);
       });
     });
-  });
-
-  whenReady(function() {
-    renderResource('application');
   });
 }).call(this);

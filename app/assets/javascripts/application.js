@@ -10,14 +10,14 @@
       document = exports.document;
 
   function withResource(url, callback) {
-    var httpRequest = new XMLHttpRequest();
-    httpRequest.onreadystatechange = function() {
-      if (httpRequest.readyState === 4) {
-        callback(JSON.parse(httpRequest.responseText));
+    var request = new XMLHttpRequest();
+    request.onreadystatechange = function() {
+      if (request.readyState === 4) {
+        callback(JSON.parse(request.responseText));
       }
     };
-    httpRequest.open('GET', url);
-    httpRequest.send();
+    request.open('GET', url);
+    request.send();
   }
 
   function listen(event, className, callback) {
@@ -39,50 +39,60 @@
     document.addEventListener('DOMContentLoaded', callback);
   }
 
-  function Model() {
-    var self = this;
-    self.fetch = function(success) {
+  function createClass(name, parentClass, members) {
+    var descriptors = {};
+    Object.keys(members).forEach(function(key) {
+      descriptors[key] = {writable: true, value: members[key]};
+    });
+
+    var initialize = members.initialize || function(){};
+
+    var Klass = eval('(function ' + name + '() { parentClass.apply(this, arguments); initialize.apply(this, arguments)})');
+    Klass.prototype = Object.create(parentClass.prototype, descriptors);
+    Klass.prototype.constructor = Klass;
+    Klass.name = name;
+    return Klass;
+  }
+
+  var Model = createClass('Model', Object, {
+    initialize: function(options) { this.options = options; },
+    url: function() { throw new Error("Url Not Implemented"); },
+    parse: function(data) { return data; },
+    fetch: function(success) {
+      var self = this;
       withResource(self.url(), function(data) {
         success(self.parse(data));
       });
-    };
-    self.parse = function(data) { return data; };
-    self.url = function() { throw new Error("Url Not Implemented"); };
-  }
+    }
+  });
 
-  function SubReddits(options) {
-    var self = new Model(options);
-    self.url = function() {
-      return 'http://www.reddit.com/subreddits/popular.json';
-    };
-    self.parse = function(data) {
+  var SubReddits = createClass('SubReddits', Model, {
+    url: function() { return 'http://www.reddit.com/subreddits/popular.json'; },
+    parse: function(data) {
       return data.data.children.map(function(obj) {
         return obj.data;
       });
-    };
-    return self;
-  }
+    }
+  });
 
-  function SubReddit(options) {
-    var self = new Model(options);
-    self.url = function() {
-      return 'http://www.reddit.com/r/' + options.id + '/hot.json';
-    };
-    self.parse = function(data) {
+  var SubReddit = createClass('SubReddit', Model, {
+    url: function() {
+      return 'http://www.reddit.com/r/' + this.options.id + '/hot.json';
+    },
+    parse: function(data) {
       return {
-        posts: data.data.children.map(function(obj) { return obj.data; })
+        posts: data.data.children.map(function(obj) {
+          return obj.data;
+        })
       };
-    };
-    return self;
-  }
+    }
+  });
 
-  function Post(options) {
-    var self = new Model(options);
-    self.url = function() {
-      return 'http://www.reddit.com/r/' + options.subreddit_id + '/comments/' + options.id + '.json';
-    };
-
-    self.parse = function(data) {
+  var Post = createClass('Post', Model, {
+    url: function() {
+      return 'http://www.reddit.com/r/' + this.options.subreddit_id + '/comments/' + this.options.id + '.json';
+    },
+    parse: function(data) {
       function parsePost(post) {
         post = post.data;
 
@@ -99,12 +109,11 @@
       }
 
       var post = parsePost(data[0].data.children[0]),
-          comments = new Comments({post: post}).parse(data[1]);
+        comments = new Comments({post: post}).parse(data[1]);
 
       return {post: post, comments: comments}
-    };
-    return self;
-  }
+    }
+  });
 
   function Comments(options) {
     var self = this;
